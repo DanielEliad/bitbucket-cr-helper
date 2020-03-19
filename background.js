@@ -39,18 +39,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		});
 		return true; // async
 	}
-	else if (request.method == "set_review_status" && request.pr && request.updated_changes) {	
+	else if (request.method == "set_review_status" && request.pr && request.path) {	
 		chrome.storage.local.get([request.pr], (data) => {
 			let stored_changes = data[request.pr];
-			let merged_changes = merge_changes(stored_changes, request.updated_changes);			
+			for(let i = 0; i < stored_changes.length; i++) {
+				// TODO: is this okay for multiple changes on the same path?
+				if(stored_changes[i].path.toString == request.path) {
+					stored_changes[i].reviewed = request.reviewed;
+				}
+			}
 			let update = {};
-			update[request.pr] = merged_changes;
+			update[request.pr] = stored_changes;
 			chrome.storage.local.set(update, () => {
-				console.log("SET THE VALUE", merged_changes);
-				sendResponse({data: merged_changes});
+				sendResponse({data: true});
 			});
 		});
 		return true; // async
+	}
 	else {
 		sendResponse({}); // snub them.
 	}

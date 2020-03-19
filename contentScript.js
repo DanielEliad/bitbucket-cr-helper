@@ -38,6 +38,8 @@ function get_endpoint(end) {
 
 function reviewed_button_clicked() {
 	console.log("clicked reviewe button!");
+	mark_change(curr_file, !local_change_state[curr_file].reviewed);
+	update_review_button();
 }
 
 function create_review_button() {
@@ -138,7 +140,7 @@ async function get_pr_changes() {
 function set_review_status_storage(path, reviewed) {
 	let payload = {method: "set_review_status", pr: pr_name, path: path, reviewed: reviewed };
 	chrome.runtime.sendMessage(payload, function(response) { 
-		console.log("successfully set reviewe status"); 
+		console.log("successfully set reviewe status ", response); 
 	});
 }
 
