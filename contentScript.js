@@ -38,8 +38,9 @@ function get_endpoint(end) {
 
 function reviewed_button_clicked() {
 	console.log("clicked reviewe button!");
-	mark_change(curr_file, !local_change_state[curr_file].reviewed);
-	update_review_button();
+	mark_change(curr_file, !local_change_state[curr_file].reviewed).then(res => {
+		update_review_button();
+	});
 }
 
 function create_review_button() {
@@ -54,6 +55,14 @@ function create_review_button() {
 }
 
 function update_review_button() {
+	
+	if(!document.location.pathname.endsWith("/diff") || !document.location.hash) {
+		return;
+	}
+	if(!document.getElementById("reviewed_button")) {
+		create_review_button();
+	}
+
 	const reviewed = get_change_reviewed_status(curr_file);
 	let b = document.getElementById("reviewed_button");
 	let spans = b.querySelectorAll("span");
@@ -137,14 +146,6 @@ async function get_pr_changes() {
 	return changes_raw.map(parse_change);
 }
 
-function set_review_status_storage(path, reviewed) {
-	let payload = {method: "set_review_status", pr: pr_name, path: path, reviewed: reviewed };
-	chrome.runtime.sendMessage(payload, function(response) { 
-		console.log("successfully set reviewe status ", response); 
-	});
-}
-
-
 function merge_state_with_storage(changes) {
 	// TODO: merge the storage state for which changes exist and which are rendered unreviewed or unaffected by these updated changes.
 	// local_change_state will be equal to internal storage state at the end of this function
@@ -167,7 +168,13 @@ function merge_state_with_storage(changes) {
 
 function mark_change(path, reviewed) {
 	local_change_state[path].reviewed = reviewed;
-	set_review_status_storage(path, reviewed);
+	let payload = {method: "set_review_status", pr: pr_name, path: path, reviewed: reviewed };
+	return new Promise(resolve => {
+		chrome.runtime.sendMessage(payload, function(response) { 
+			console.log("successfully set reviewe status ", response); 
+			resolve(true);
+		});
+	});
 }
 
 function get_change_reviewed_status(path) {
