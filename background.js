@@ -1,7 +1,3 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 'use strict';
 
 chrome.runtime.onInstalled.addListener(function() {
@@ -17,18 +13,27 @@ chrome.runtime.onInstalled.addListener(function() {
 });
 
 function merge_changes(stored_changes, updated_changes) {
-	// TODO actually merge things
-	//let merged_changes = updated_changes.map((c) => { c.reviewed = true; return c });
-	//for now just return the stored changes without updating with updated_changes
-	console.log("Stored Changes ", stored_changes);
-	let merged_changes = stored_changes; // TEST
-	return merged_changes; // always run over stored changes;
+	// TODO actually merge things	
+	for(let i = 0; i < stored_changes.length; i++) {
+		let corresponding_change = updated_changes.filter(c => c.path.toString == stored_changes[i].path.toString);
+		if(corresponding_change) {
+			corresponding_change = corresponding_change[0]; // there can only be one for now
+			if(corresponding_change.contentId == stored_changes[i].contentId) {
+				// take the reviewed status from stored because its the same change
+				corresponding_change.reviewed = stored_changes[i].reviewed;
+			} else {
+				corresponding_change.reviewed = false;
+			}
+		}
+	}
+
+	return updated_changes;
 }
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	if (request.method == "merge_state" && request.pr && request.updated_changes) {	
 		chrome.storage.local.get([request.pr], (data) => {
-			let stored_changes = data[request.pr];
+			let stored_changes = data[request.pr] || [];
 			let merged_changes = merge_changes(stored_changes, request.updated_changes);			
 			let update = {};
 			update[request.pr] = merged_changes;
